@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jocul Optimismului</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f0f4f8; margin:0; padding:0; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+  #app { background:#fff; padding:25px 30px; border-radius:8px; max-width:600px; width:100%; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+  h1, h2 { color:#2c3e50; }
+  button { background:#3498db; color:#fff; border:none; padding:12px 20px; border-radius:5px; cursor:pointer; font-size:16px; margin-top:15px; }
+  button:hover { background:#2980b9; }
+  .question { margin-top:20px; }
+  .answers { margin-top:12px; }
+  label { display:block; margin-bottom:10px; cursor:pointer; font-size:15px; color:#34495e; }
+  input[type=radio] { margin-right: 10px; }
+  #resultText { margin-top: 20px; font-weight: 600; color: #2c3e50; }
+  #advice { margin-top: 15px; font-style: italic; color: #16a085; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="startScreen">
+    <h1>Te-ai gândit vreodată în ce fel privești viața?</h1>
+    <p>Hai să aflăm împreună dacă primești viața cu mai mult optimism sau pesimism.</p>
+    <button id="startBtn">Hai să aflăm</button>
+  </div>
+
+  <div id="quizScreen" style="display:none;">
+    <h2 id="levelTitle"></h2>
+    <div id="questionContainer"></div>
+    <button id="nextQuestionBtn" disabled>Următoarea întrebare</button>
+  </div>
+
+  <div id="levelCompleteScreen" style="display:none;">
+    <h2 id="levelCompleteMessage"></h2>
+    <button id="continueBtn"></button>
+  </div>
+
+  <div id="finalResultScreen" style="display:none;">
+    <h2>Felicitări! Ai parcurs cu succes toate cele 3 niveluri.</h2>
+    <p>Acum putem să tragem o concluzie asupra acestui studiu. Hai să aflăm rezultatul.</p>
+    <button id="showResultBtn">Vreau să aflu rezultatul acum</button>
+  </div>
+
+  <div id="resultScreen" style="display:none;">
+    <h2>Rezultatul tău</h2>
+    <p id="resultText"></p>
+    <p id="advice"></p>
+  </div>
+</div>
+
+<script>
+// Toate întrebările (nivel 1, 2, 3) cu variantele lor
+const levels = [
+  { // Nivel 1 - Easy
+    title: "Nivelul 1 - De bază",
+    questions: [
+      {
+        q: "Ai pierdut un tren important.",
+        options: [
+          "Totul merge prost în viața mea, nici măcar un tren nu pot prinde.",
+          "E clar, ziua asta e compromisă complet.",
+          "Poate că am evitat ceva rău. Acum am un moment să respir și să-mi reorganizez ziua."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Ai fost respins la un interviu de angajare.",
+        options: [
+          "Nu sunt suficient de bun pentru jobul ăsta.",
+          "Probabil că acest loc de muncă nu era potrivit pentru mine și urmează ceva mai bun.",
+          "Nu are rost să mai încerc, oricum nu mă vrea nimeni."
+        ],
+        positiveIndex: 1
+      },
+      {
+        q: "Te-ai certat cu un prieten apropiat.",
+        options: [
+          "Gata, prietenia noastră s-a terminat.",
+          "Poate această ceartă ne ajută să ne înțelegem mai bine și să ne apropiem.",
+          "E vina lui, nu mai vorbesc niciodată cu el."
+        ],
+        positiveIndex: 1
+      },
+      {
+        q: "Ai pierdut o sumă importantă de bani.",
+        options: [
+          "Nu mai recuperez niciodată banii ăia.",
+          "Sunt un om iresponsabil, merit ce mi se întâmplă.",
+          "E o lecție dură, dar pot învăța din ea să fiu mai atent pe viitor."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Ai primit o critică dură la locul de muncă.",
+        options: [
+          "Șeful are ceva personal cu mine.",
+          "Poate e o oportunitate să mă dezvolt și să îmbunătățesc ceva.",
+          "Nu mai am chef de muncă după ce mi-a zis așa ceva."
+        ],
+        positiveIndex: 1
+      },
+      {
+        q: "A trebuit să anulezi o vacanță mult așteptată.",
+        options: [
+          "Nu mai am noroc deloc, nici în vacanțe.",
+          "Viața e nedreaptă, nu mai planific nimic.",
+          "Poate e un semn că pot economisi și să planific ceva și mai frumos mai târziu."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Te-ai îmbolnăvit și trebuie să stai acasă.",
+        options: [
+          "Ce ghinion, fix acum când aveam atâtea de făcut.",
+          "Sunt obosit și slăbit, deci clar nu mai pot face nimic bun.",
+          "E un semnal că trebuie să-mi ofer mai multă grijă și odihnă."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Ai fost părăsit într-o relație.",
+        options: [
+          "Nimeni nu mă iubește cu adevărat.",
+          "E vina mea, nu sunt destul de bun.",
+          "Acum am șansa să mă redescopăr și să cresc ca om."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Ai făcut o greșeală mare la un proiect important.",
+        options: [
+          "Am stricat tot, nu mai am ce salva.",
+          "Greșelile sunt parte din procesul de învățare – pot repara și îmbunătăți.",
+          "Mai bine renunț, nu sunt făcut pentru asta."
+        ],
+        positiveIndex: 1
+      },
+      {
+        q: "Te simți singur într-o perioadă mai grea.",
+        options: [
+          "Nu contez pentru nimeni.",
+          "Poate e timpul să mă apropii mai mult de mine și să învăț să-mi fiu prieten.",
+          "Asta e viața, trebuie să trăiesc cu singurătatea."
+        ],
+        positiveIndex: 1
+      }
+    ]
+  },
+  { // Nivel 2 - Mediu
+    title: "Nivelul 2 - Intermediar",
+    questions: [
+      {
+        q: "O persoană dragă te evită fără explicații.",
+        options: [
+          "Probabil nu-i mai pasă de mine.",
+          "Mereu pierd oamenii care contează pentru mine.",
+          "Poate traversează o perioadă dificilă și are nevoie de spațiu."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Ai o relație tensionată cu unul dintre părinți.",
+        options: [
+          "Așa sunt părinții mei, nu mă vor înțelege niciodată.",
+          "Orice aș face, tot sunt judecat.",
+          "Poate nevoile noastre sunt diferite și trebuie să învăț să le văd perspectiva."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Ai ajuns într-o perioadă în care nu îți permiți lucruri de bază.",
+        options: [
+          "N-o să ies niciodată din situația asta.",
+          "E nedrept, alții au totul fără să muncească.",
+          "Acum învăț să apreciez esențialul și să fiu creativ cu puținul pe care-l am."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "După ani de muncă, simți că jobul tău nu te mai motivează.",
+        options: [
+          "Am pierdut ani din viață într-un loc care nu mă împlinește.",
+          "E prea târziu să schimb ceva.",
+          "E un semn că am crescut și am nevoie de o nouă direcție."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Primești un diagnostic care îți impune schimbarea stilului de viață.",
+        options: [
+          "Viața mea nu va mai fi niciodată la fel.",
+          "Mă simt blocat și lipsit de control.",
+          "Poate e momentul să am mai multă grijă de mine și să îmi ascult corpul."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Simți că viața ta a intrat într-o rutină fără sens.",
+        options: [
+          "Asta e tot ce oferă viața – un șir de zile goale.",
+          "Alții par să aibă un scop, dar eu nu-l găsesc pe al meu.",
+          "Poate tocmai această căutare e începutul unei descoperiri mai profunde."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Ai fost trădat de cineva în care aveai încredere.",
+        options: [
+          "Nu mai pot avea încredere în nimeni.",
+          "Oamenii apropiați te rănesc cel mai tare.",
+          "Poate trădarea asta mă învață să-mi aleg cu mai multă claritate limitele și valorile."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Te simți presat să urmezi așteptările familiei tale.",
+        options: [
+          "Dacă nu fac ce vor ei, îi voi dezamăgi.",
+          "Nu pot trăi viața mea din cauza lor.",
+          "Pot onora legătura cu ei fără să renunț la cine sunt eu cu adevărat."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Ai investit timp și bani într-un proiect care a eșuat.",
+        options: [
+          "Am aruncat tot pe fereastră.",
+          "Nu mai am curaj să încerc nimic nou.",
+          "Chiar dacă n-a mers, am învățat multe și sunt mai pregătit pentru următorul pas."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Te confrunți cu o perioadă lungă de epuizare emoțională.",
+        options: [
+          "Nu mai sunt eu, nu mai am energie pentru nimic.",
+          "Așa o să fiu mereu – gol pe dinăuntru.",
+          "Poate e timpul să mă întorc la mine, cu blândețe și răbdare, și să mă reconstruiesc."
+        ],
+        positiveIndex: 2
+      }
+    ]
+  },
+  { // Nivel 3 - Avansat
+    title: "Nivelul 3 - Avansat",
+    questions: [
+      {
+        q: "Ai pierdut o persoană foarte apropiată, iar golul lăsat pare imposibil de umplut.",
+        options: [
+          "Viața nu va mai avea niciodată sens fără ea.",
+          "Nimeni nu o va putea înlocui vreodată.",
+          "Durerea asta mi-a arătat cât de profund pot iubi și cât de prețioase sunt legăturile omenești."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "După ani de efort, tot ce ai construit s-a prăbușit.",
+        options: [
+          "Am irosit cea mai bună parte a vieții mele.",
+          "Nu mai am energia să o iau de la capăt.",
+          "Poate tocmai căderea asta mă obligă să mă reconstruiesc dintr-un loc mai autentic."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Nu te mai recunoști în nimic din ceea ce faci sau ești.",
+        options: [
+          "Sunt un om gol, fără direcție.",
+          "Nici nu mai știu cine am fost sau ce vreau.",
+          "Poate momentul ăsta e necesar pentru a-mi regăsi vocea reală, dincolo de tot ce am învățat să fiu."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Primești vestea că trebuie să trăiești cu o boală pe termen lung.",
+        options: [
+          "Viața mea s-a terminat așa cum o știam.",
+          "Nu voi mai putea face ce făceam înainte.",
+          "Poate suferința asta mă învață să trăiesc mai profund, cu sens și prezență, dincolo de corp."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Te simți complet singur, neînțeles, fără nicio conexiune autentică.",
+        options: [
+          "Sunt invizibil pentru lume și nimănui nu-i pasă.",
+          "Oamenii nu știu sau nu pot iubi profund.",
+          "Poate această singurătate mă invită să devin propria mea sursă de iubire și sprijin."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Ai făcut o greșeală care a afectat iremediabil alte persoane.",
+        options: [
+          "Sunt un om rău și nu merit iertare.",
+          "Greșelile mele vor marca viața altora pentru totdeauna.",
+          "Pot învăța din greșeli și pot căuta să repar sau să compensez, chiar dacă nu pot schimba trecutul."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Ai pierdut încrederea în tine și în forțele proprii.",
+        options: [
+          "Nu voi mai reuși niciodată să mă ridic.",
+          "Sunt condamnat să fiu slab și neputincios.",
+          "Chiar și acum, în această stare, pot găsi o scânteie care să-mi redea puterea."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Simți că viața este o luptă continuă și fără sens.",
+        options: [
+          "Totul e o corvoadă și nu are rost să continui.",
+          "Nu există nicio speranță sau lumină la capăt.",
+          "Fiecare pas pe care-l fac, oricât de greu, este o victorie și o oportunitate de creștere."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Ai fost dezamăgit profund de cineva în care aveai încredere absolută.",
+        options: [
+          "Niciun om nu merită să aibă încrederea mea.",
+          "Oamenii sunt doar dezamăgiri deghizate.",
+          "Dezamăgirile mă învață să fiu mai atent și să iubesc cu mai multă înțelepciune."
+        ],
+        positiveIndex: 2
+      },
+      {
+        q: "Te confrunți cu o criză existențială puternică.",
+        options: [
+          "Viața nu are niciun scop real.",
+          "Sunt pierdut într-un haos fără ieșire.",
+          "Chiar și crizele pot fi începutul unei renașteri personale profunde."
+        ],
+        positiveIndex: 2
+      }
+    ]
+  }
+];
+
+// Variabile de stare
+let currentLevelIndex = 0;
+let currentQuestionIndex = 0;
+let userAnswers = []; // păstrăm indexurile răspunsurilor alese
+let optimismCount = 0;
+let pessimismCount = 0;
+
+// Elemente DOM
+const startScreen = document.getElementById("startScreen");
+const quizScreen = document.getElementById("quizScreen");
+const levelTitle = document.getElementById("levelTitle");
+const questionContainer = document.getElementById("questionContainer");
+const nextQuestionBtn = document.getElementById("nextQuestionBtn");
+const levelCompleteScreen = document.getElementById("levelCompleteScreen");
+const levelCompleteMessage = document.getElementById("levelCompleteMessage");
+const continueBtn = document.getElementById("continueBtn");
+const finalResultScreen = document.getElementById("finalResultScreen");
+const showResultBtn = document.getElementById("showResultBtn");
+const resultScreen = document.getElementById("resultScreen");
+const resultText = document.getElementById("resultText");
+const advice = document.getElementById("advice");
+
+document.getElementById("startBtn").addEventListener("click", () => {
+  startScreen.style.display = "none";
+  currentLevelIndex = 0;
+  currentQuestionIndex = 0;
+  userAnswers = [];
+  optimismCount = 0;
+  pessimismCount = 0;
+  showLevel(currentLevelIndex);
+});
+
+nextQuestionBtn.addEventListener("click", () => {
+  // Verificăm dacă s-a ales un răspuns
+  const selectedOption = document.querySelector('input[name="answer"]:checked');
+  if (!selectedOption) return;
+  const selectedIndex = parseInt(selectedOption.value);
+  userAnswers.push(selectedIndex);
+
+  // Contorizare optimism vs pesimism
+  const currentQuestion = levels[currentLevelIndex].questions[currentQuestionIndex];
+  if (selectedIndex === currentQuestion.positiveIndex) optimismCount++;
+  else pessimismCount++;
+
+  currentQuestionIndex++;
+
+  if (currentQuestionIndex < levels[currentLevelIndex].questions.length) {
+    renderQuestion(currentQuestionIndex);
+    nextQuestionBtn.disabled = true;
+  } else {
+    // Am terminat nivelul
+    quizScreen.style.display = "none";
+    levelCompleteScreen.style.display = "block";
+
+    if (currentLevelIndex === 0) {
+      levelCompleteMessage.textContent = "Felicitări pentru parcurgerea acestui prim nivel, vom continua cu nivelul 2, apasă aici.";
+      continueBtn.textContent = "Continuăm cu nivelul 2";
+    } else if (currentLevelIndex === 1) {
+      levelCompleteMessage.textContent = "Felicitări! Pentru a putea finaliza acest studiu mai avem de trecut 1 singur nivel. Apasă aici pentru a continua cu nivelul 3.";
+      continueBtn.textContent = "Finalizăm și nivelul 3";
+    } else if (currentLevelIndex === 2) {
+      levelCompleteMessage.textContent = "";
+      continueBtn.style.display = "none";
+      finalResultScreen.style.display = "block";
+    }
+  }
+});
+
+continueBtn.addEventListener("click", () => {
+  levelCompleteScreen.style.display = "none";
+  currentLevelIndex++;
+  currentQuestionIndex = 0;
+  showLevel(currentLevelIndex);
+});
+
+showResultBtn.addEventListener("click", () => {
+  finalResultScreen.style.display = "none";
+  showResult();
+});
+
+// Funcții
+function showLevel(levelIndex) {
+  levelTitle.textContent = levels[levelIndex].title;
+  quizScreen.style.display = "block";
+  renderQuestion(0);
+  nextQuestionBtn.disabled = true;
+  continueBtn.style.display = "inline-block";
+}
+
+function renderQuestion(qIndex) {
+  const questionData = levels[currentLevelIndex].questions[qIndex];
+  let html = `<div class="question"><strong>Întrebarea ${qIndex + 1}:</strong> ${questionData.q}</div><div class="answers">`;
+  questionData.options.forEach((opt, i) => {
+    html += `
+      <label>
+        <input type="radio" name="answer" value="${i}" />
+        ${opt}
+      </label>
+    `;
+  });
+  html += "</div>";
+  questionContainer.innerHTML = html;
+
+  // Adăugăm event pe radio pentru a activa butonul "Următoarea întrebare"
+  const radios = questionContainer.querySelectorAll('input[name="answer"]');
+  radios.forEach(radio => {
+    radio.addEventListener("change", () => {
+      nextQuestionBtn.disabled = false;
+    });
+  });
+}
+
+function showResult() {
+  resultScreen.style.display = "block";
+
+  const totalQuestions = levels.reduce((acc, lvl) => acc + lvl.questions.length, 0);
+  const optimismPercent = Math.round((optimismCount / totalQuestions) * 100);
+  const pessimismPercent = 100 - optimismPercent;
+
+  resultText.textContent = `Privești viața cu optimist în proporție de ${optimismPercent}%, iar cu pesimist în proporție de ${pessimismPercent}%.`;
+
+  // Sfat în funcție de rezultat
+  let sfat = "";
+  if (optimismPercent >= 80) {
+    sfat = "Felicitări! Atitudinea ta pozitivă te ajută să faci față provocărilor și să crești personal.";
+  } else if (optimismPercent >= 50) {
+    sfat = "Ai o abordare echilibrată. Continuă să cauți partea bună a situațiilor, asta te va ajuta să evoluezi.";
+  } else {
+    sfat = "Uneori viața pare grea, dar învățarea să vezi partea bună îți poate aduce mai multă pace și bucurie. Ai curaj, fiecare zi e o nouă șansă!";
+  }
+  advice.textContent = sfat;
+}
+</script>
+</body>
+</html>
